@@ -136,7 +136,6 @@ body.light #theme-toggle{background:#e2e8f0;border-color:#94a3b8;color:#334155}
 body.light .pos{color:#16a34a}
 body.light .neg{color:#dc2626}
 /* Movers */
-.movers-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .movers-section h3{font-size:.8rem;color:#64748b;text-transform:uppercase;
                    letter-spacing:.05em;margin-bottom:10px}
 .mover-row{display:flex;align-items:center;gap:8px;padding:7px 0;
@@ -426,30 +425,25 @@ function renderMoversContent(){
   var results=[];
   syms.forEach(function(sym){
     var hist=filterHist(sym,range,customFrom,customTo);
-    if(hist.length<2)return;
-    var base=hist[0].price,last=hist[hist.length-1].price;
-    if(!base)return;
-    results.push({sym:sym,name:D[sym].name,chg:(last-base)/base*100,start:base,end:last});
+    if(!hist.length)return;
+    var vols=hist.map(function(h){return h.vol||0;}).filter(function(v){return v>0;});
+    if(!vols.length)return;
+    var avgVol=vols.reduce(function(a,b){return a+b;},0)/vols.length;
+    results.push({sym:sym,vol:avgVol});
   });
-  results.sort(function(a,b){return b.chg-a.chg;});
-  var gainers=results.slice(0,10);
-  var losers=results.slice().sort(function(a,b){return a.chg-b.chg;}).slice(0,10);
-  function moverRows(list,isGain){
-    var maxAbs=Math.max.apply(null,list.map(function(r){return Math.abs(r.chg);}));
-    if(!maxAbs)maxAbs=0.01;
-    return list.map(function(r){
-      var w=Math.round(Math.abs(r.chg)/maxAbs*100);
-      var col=isGain?'#4ade80':'#f87171';
-      return '<div class="mover-row" onclick="goView(\'detail\',\''+r.sym+'\')">'+
-             '<span class="mover-sym">'+r.sym+'</span>'+
-             '<div class="mover-bar-wrap"><div class="mover-bar" style="width:'+w+'%;background:'+col+'55;border-right:2px solid '+col+'"></div></div>'+
-             '<span class="mover-pct '+(isGain?'pos':'neg')+'">'+fmtPct(r.chg)+'</span>'+
-             '</div>';
-    }).join('');
-  }
-  var noData='<p style="color:#475569;font-size:.82rem;padding:8px 0">Need at least 2 days of data for this range.</p>';
-  document.getElementById('gainers').innerHTML=gainers.length?moverRows(gainers,true):noData;
-  document.getElementById('losers').innerHTML=losers.length?moverRows(losers,false):noData;
+  results.sort(function(a,b){return b.vol-a.vol;});
+  var top=results.slice(0,20);
+  var noData='<p style="color:#475569;font-size:.82rem;padding:8px 0">No volume data available for this range.</p>';
+  if(!top.length){document.getElementById('gainers').innerHTML=noData;return;}
+  var maxVol=top[0].vol;
+  document.getElementById('gainers').innerHTML=top.map(function(r){
+    var w=Math.round(r.vol/maxVol*100);
+    return '<div class="mover-row" onclick="goView(\'detail\',\''+r.sym+'\')">'+
+           '<span class="mover-sym">'+r.sym+'</span>'+
+           '<div class="mover-bar-wrap"><div class="mover-bar" style="width:'+w+'%;background:#3b82f655;border-right:2px solid #3b82f6"></div></div>'+
+           '<span class="mover-pct">'+fmtVol(r.vol)+'</span>'+
+           '</div>';
+  }).join('');
 }
 
 
@@ -527,10 +521,7 @@ BODY = """\
 
   <div id='panel-movers' class='panel'>
     <div id='movers-range'></div>
-    <div class='movers-grid'>
-      <div class='movers-section'><h3 class='pos'>Top Gainers</h3><div id='gainers'></div></div>
-      <div class='movers-section'><h3 class='neg'>Top Losers</h3><div id='losers'></div></div>
-    </div>
+    <div class='movers-section'><h3>Most Active by Volume</h3><div id='gainers'></div></div>
   </div>
 
 </div>

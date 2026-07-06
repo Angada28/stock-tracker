@@ -7,11 +7,11 @@
 #
 # Usage:  powershell -ExecutionPolicy Bypass -File setup_schedule.ps1
 
-$ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
-$PythonExe   = (Get-Command python).Source
-$MainScript  = Join-Path $ScriptDir "main.py"
+$ScriptDir     = Split-Path -Parent $MyInvocation.MyCommand.Path
+$PythonExe     = (Get-Command python).Source
+$MainScript    = Join-Path $ScriptDir "main.py"
 $CatchupScript = Join-Path $ScriptDir "catchup.py"
-$LogFile     = Join-Path $ScriptDir "tracker.log"
+$LogFile       = Join-Path $ScriptDir "tracker.log"
 
 # -- Install Python deps -------------------------------------------------------
 Write-Host "Installing Python dependencies ..."
@@ -75,9 +75,9 @@ $Action2   = New-ScheduledTaskAction `
     -Execute $PythonExe `
     -Argument "`"$CatchupScript`" >> `"$LogFile`" 2>&1" `
     -WorkingDirectory $ScriptDir
-$Trigger2  = New-ScheduledTaskTrigger -Daily -At "12:00AM"
-$Trigger2.Repetition.Interval = "PT1H"
-$Trigger2.Repetition.Duration = "P1D"
+$Trigger2  = New-ScheduledTaskTrigger -Once -At "12:00AM" `
+    -RepetitionInterval (New-TimeSpan -Hours 1) `
+    -RepetitionDuration (New-TimeSpan -Days 3650)
 $Settings2 = New-ScheduledTaskSettingsSet `
     -ExecutionTimeLimit (New-TimeSpan -Minutes 5) `
     -StartWhenAvailable `
@@ -99,7 +99,7 @@ Write-Host ""
 Write-Host "Setup complete. Logs -> $LogFile"
 Write-Host ""
 Write-Host "To run immediately:      python `"$MainScript`""
-Write-Host "To backfill history:     python `"$MainScript`" --backfill 2026-06-25"
+Write-Host "To backfill history:     python `"$MainScript`" --backfill"
 Write-Host "To refresh dashboard:    python `"$MainScript`" --dashboard-only"
 Write-Host "To remove both tasks:"
 Write-Host "  Unregister-ScheduledTask -TaskName '$TaskName1'"

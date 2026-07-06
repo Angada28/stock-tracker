@@ -71,7 +71,8 @@ def main():
             run_backfill(conn, start_str=None, symbols=new_symbols)
 
         # Step 4: weekly gap-fill on the configured day of week
-        if date.today().weekday() == config.WEEKLY_FILL_DAY:
+        # (skipped if --backfill was passed since that covers the same ground)
+        if date.today().weekday() == config.WEEKLY_FILL_DAY and not args.backfill:
             print(f"Weekly gap-fill (start: {config.BACKFILL_START}) ...")
             run_backfill(conn, start_str=config.BACKFILL_START)
 

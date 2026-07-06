@@ -19,18 +19,18 @@ python --version
 
 ## Files
 
-| File | Purpose |
-|---|---|
-| `main.py` | Entry point — runs the full pipeline |
-| `fetch.py` | Yahoo Finance API calls |
-| `db.py` | Database setup and inserts |
-| `backfill.py` | Historical data fetching |
-| `export_excel.py` | Generates `stocks.xlsx` |
-| `export_html.py` | Generates `dashboard.html` |
-| `config.py` | Reads settings from `config.ini` |
-| `config.ini` | User-editable settings (start date, fill day) |
-| `setup_schedule.ps1` | One-time Windows Task Scheduler setup |
-| `requirements.txt` | Python dependencies |
+| File                 | Purpose                                       |
+| -------------------- | --------------------------------------------- |
+| `main.py`            | Entry point — runs the full pipeline          |
+| `fetch.py`           | Yahoo Finance API calls                       |
+| `db.py`              | Database setup and inserts                    |
+| `backfill.py`        | Historical data fetching                      |
+| `export_excel.py`    | Generates `stocks.xlsx`                       |
+| `export_html.py`     | Generates `dashboard.html`                    |
+| `config.py`          | Reads settings from `config.ini`              |
+| `config.ini`         | User-editable settings (start date, fill day) |
+| `setup_schedule.ps1` | One-time Windows Task Scheduler setup         |
+| `requirements.txt`   | Python dependencies                           |
 
 ---
 
@@ -79,6 +79,13 @@ This creates two Windows Task Scheduler tasks:
 
 - **StockTracker_Daily** — runs `main.py` every weekday at 4:30 PM
 - **StockTracker_Catchup** — runs every hour and fetches data if today's hasn't been collected yet (handles missed runs)
+
+To confirm the tasks work:
+
+```
+Get-ScheduledTask -TaskName "StockTracker_Daily"
+Get-ScheduledTask -TaskName "StockTracker_Catchup"
+```
 
 To remove the scheduled tasks later:
 
@@ -167,16 +174,3 @@ All inserts use `INSERT OR IGNORE`, so data is never duplicated and any step is 
 - The database (`stocks.db`) and generated files (`dashboard.html`, `stocks.xlsx`) are created automatically on first run and should not be committed to version control — add them to `.gitignore`.
 
 ---
-
-## Suggested .gitignore
-
-```
-stocks.db
-stocks.xlsx
-dashboard.html
-__pycache__/
-*.pyc
-old db/
-tracker.log
-catchup.py
-```

@@ -23,11 +23,11 @@ COLUMNS = [
 COL_FORMATS = {
     "Price":           '$#,##0.00',
     "Change":          '+$#,##0.00;-$#,##0.00',
-    "Change %":        '+0.00%;-0.00%',
+    "Change %":        '+0.00"%";-0.00"%"',
     "Volume":          '#,##0',
     "Market Cap":      '$#,##0,,,"B"',
     "P/E Ratio (TTM)": '0.00',
-    "52 Wk Change %":  '+0.00%;-0.00%',
+    "52 Wk Change %":  '+0.00"%";-0.00"%"',
 }
 
 # columns that get green/red fill based on positive/negative value

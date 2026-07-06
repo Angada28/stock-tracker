@@ -1,0 +1,8 @@
+stocks.db
+stocks.xlsx
+dashboard.html
+__pycache__/
+*.pyc
+old db/
+tracker.log
+catchup.py

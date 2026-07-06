@@ -31,7 +31,7 @@ def _parse_quote(q, today):
         "volume":          q.get("regularMarketVolume"),
         "market_cap":      q.get("marketCap"),
         "pe_ratio":        q.get("trailingPE"),
-        "wk52_change_pct": (wk52 * 100) if wk52 is not None else None,
+        "wk52_change_pct": wk52 if wk52 is not None else None,
         "wk52_low":        q.get("fiftyTwoWeekLow"),
         "wk52_high":       q.get("fiftyTwoWeekHigh"),
     }

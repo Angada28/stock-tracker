@@ -6,7 +6,7 @@ from datetime import date
 from pathlib import Path
 
 BASE      = Path(__file__).parent
-XLSX_PATH = BASE / "stocks.xlsx"
+XLSX_DIR  = BASE / "excel"
 
 COLUMNS = [
     ("symbol",          "Symbol"),
@@ -74,6 +74,8 @@ def _format_sheet(ws, n_rows):
 
 def export_excel(conn):
     today = date.today().isoformat()
+    XLSX_DIR.mkdir(exist_ok=True)
+    XLSX_PATH = XLSX_DIR / f"stocks_{today}.xlsx"
     df = pd.read_sql_query("""
         SELECT dp.symbol, s.name,
                dp.price, dp.change, dp.change_pct,

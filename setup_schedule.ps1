@@ -20,15 +20,19 @@ Write-Host "Installing Python dependencies ..."
 # -- Write the catch-up helper script -----------------------------------------
 @"
 """
-catchup.py - run hourly; only calls main.py if today's data is missing.
+catchup.py - run hourly after 4 PM; only calls main.py if today's data is missing.
 """
 import sqlite3, sys, subprocess
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 BASE  = Path(__file__).parent
 DB    = BASE / "stocks.db"
 TODAY = date.today().isoformat()
+
+if datetime.now().hour < 16:
+    print(f"Before 4 PM - skipping until market close.")
+    sys.exit(0)
 
 if DB.exists():
     conn = sqlite3.connect(DB)

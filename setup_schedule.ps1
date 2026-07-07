@@ -36,13 +36,15 @@ if datetime.now().hour < 16:
 
 if DB.exists():
     conn = sqlite3.connect(DB)
-    row  = conn.execute(
-        "SELECT 1 FROM daily_prices WHERE date=? LIMIT 1", (TODAY,)
-    ).fetchone()
+    count = conn.execute(
+        "SELECT COUNT(*) FROM daily_prices WHERE date=? AND source='most_active'", (TODAY,)
+    ).fetchone()[0]
     conn.close()
-    if row:
-        print(f"Already have data for {TODAY}, skipping.")
+    if count >= 50:
+        print(f"Already have data for {TODAY} ({count} rows), skipping.")
         sys.exit(0)
+    elif count > 0:
+        print(f"Only {count} rows for {TODAY} - looks like a partial run, retrying ...")
 
 print(f"No data for {TODAY} yet - running main.py ...")
 subprocess.run([sys.executable, str(BASE / "main.py")], check=True)
@@ -51,8 +53,8 @@ subprocess.run([sys.executable, str(BASE / "main.py")], check=True)
 # -- Task 1: Daily at 4:30 PM on weekdays -------------------------------------
 $TaskName1 = "StockTracker_Daily"
 $Action1   = New-ScheduledTaskAction `
-    -Execute $PythonExe `
-    -Argument "`"$MainScript`" >> `"$LogFile`" 2>&1" `
+    -Execute "cmd.exe" `
+    -Argument "/c `"$PythonExe`" `"$MainScript`" >> `"$LogFile`" 2>&1" `
     -WorkingDirectory $ScriptDir
 $Trigger1  = New-ScheduledTaskTrigger -Weekly `
     -DaysOfWeek Monday,Tuesday,Wednesday,Thursday,Friday -At "4:30PM"
@@ -76,8 +78,8 @@ Write-Host "  [OK] $TaskName1 - weekdays at 4:30 PM"
 # -- Task 2: Catch-up every hour, skips if already ran today ------------------
 $TaskName2 = "StockTracker_Catchup"
 $Action2   = New-ScheduledTaskAction `
-    -Execute $PythonExe `
-    -Argument "`"$CatchupScript`" >> `"$LogFile`" 2>&1" `
+    -Execute "cmd.exe" `
+    -Argument "/c `"$PythonExe`" `"$CatchupScript`" >> `"$LogFile`" 2>&1" `
     -WorkingDirectory $ScriptDir
 $Trigger2  = New-ScheduledTaskTrigger -Once -At "12:00AM" `
     -RepetitionInterval (New-TimeSpan -Hours 1) `

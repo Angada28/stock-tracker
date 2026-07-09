@@ -2,6 +2,7 @@
 fetch.py -- Yahoo Finance API calls.
 """
 import requests
+import time
 from datetime import date, datetime, timezone
 
 HEADERS = {
@@ -14,12 +15,10 @@ HEADERS = {
 }
 
 SCREENER_URL = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
-QUOTE_URL    = "https://query1.finance.yahoo.com/v7/finance/quote"
 CHART_URL    = "https://query2.finance.yahoo.com/v8/finance/chart/{symbol}"
 
 
 def _parse_quote(q, today):
-    # fiftyTwoWeekChangePercent is a decimal (e.g. 0.25 = 25%)
     wk52 = q.get("fiftyTwoWeekChangePercent")
     return {
         "date":            today,
@@ -56,20 +55,17 @@ def fetch_most_active():
 
 
 def fetch_quotes_for_symbols(symbols):
-    """Batch-fetch current quotes for a list of symbols (gap-fill)."""
+    """Gap-fill: fetch today's price/volume for each symbol via chart history.
+    Uses the same reliable endpoint as backfill -- no auth required.
+    Market cap, P/E, and 52wk are not needed for gap-fill rows.
+    """
     today = date.today().isoformat()
     rows = []
-    batch_size = 50
-    for i in range(0, len(symbols), batch_size):
-        batch = symbols[i:i + batch_size]
-        try:
-            resp = requests.get(QUOTE_URL, headers=HEADERS,
-                                params={"symbols": ",".join(batch)}, timeout=20)
-            resp.raise_for_status()
-            quotes = resp.json().get("quoteResponse", {}).get("result", [])
-            rows.extend(_parse_quote(q, today) for q in quotes)
-        except Exception as e:
-            print(f"  gap-fill batch {i // batch_size + 1} failed: {e}")
+    for sym in symbols:
+        history = fetch_chart_history(sym, today, today)
+        if history:
+            rows.append(history[-1])
+        time.sleep(0.15)
     return rows
 
 

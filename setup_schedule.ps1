@@ -14,6 +14,8 @@ $CatchupScript = Join-Path $ScriptDir "catchup.py"
 $LogFile       = Join-Path $ScriptDir "tracker.log"
 $DailyWrapper  = Join-Path $ScriptDir "run_daily.ps1"
 $CatchupWrapper= Join-Path $ScriptDir "run_catchup.ps1"
+$DailyVbs      = Join-Path $ScriptDir "run_daily.vbs"
+$CatchupVbs    = Join-Path $ScriptDir "run_catchup.vbs"
 
 # -- Install Python deps -------------------------------------------------------
 Write-Host "Installing Python dependencies ..."
@@ -82,11 +84,22 @@ Add-Content -Path `$LogFile -Value "[`$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')]
 Add-Content -Path `$LogFile -Value "[`$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] --- Catchup run finished ---"
 "@ | Set-Content -Path $CatchupWrapper -Encoding UTF8
 
+# -- Write VBScript launchers (run PowerShell with no visible window) ----------
+@"
+Set WShell = CreateObject("WScript.Shell")
+WShell.Run "powershell.exe -WindowStyle Hidden -ExecutionPolicy Bypass -File ""$DailyWrapper""", 0, False
+"@ | Set-Content -Path $DailyVbs -Encoding ASCII
+
+@"
+Set WShell = CreateObject("WScript.Shell")
+WShell.Run "powershell.exe -WindowStyle Hidden -ExecutionPolicy Bypass -File ""$CatchupWrapper""", 0, False
+"@ | Set-Content -Path $CatchupVbs -Encoding ASCII
+
 # -- Task 1: Daily at 4:30 PM on weekdays -------------------------------------
 $TaskName1 = "StockTracker_Daily"
 $Action1   = New-ScheduledTaskAction `
-    -Execute "powershell.exe" `
-    -Argument "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"$DailyWrapper`"" `
+    -Execute "wscript.exe" `
+    -Argument "`"$DailyVbs`"" `
     -WorkingDirectory $ScriptDir
 $Trigger1  = New-ScheduledTaskTrigger -Weekly `
     -DaysOfWeek Monday,Tuesday,Wednesday,Thursday,Friday -At "4:30PM"
@@ -110,8 +123,8 @@ Write-Host "  [OK] $TaskName1 - weekdays at 4:30 PM"
 # -- Task 2: Catch-up every hour, skips if already ran today ------------------
 $TaskName2 = "StockTracker_Catchup"
 $Action2   = New-ScheduledTaskAction `
-    -Execute "powershell.exe" `
-    -Argument "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"$CatchupWrapper`"" `
+    -Execute "wscript.exe" `
+    -Argument "`"$CatchupVbs`"" `
     -WorkingDirectory $ScriptDir
 $Trigger2  = New-ScheduledTaskTrigger -Once -At "12:00AM" `
     -RepetitionInterval (New-TimeSpan -Hours 1) `

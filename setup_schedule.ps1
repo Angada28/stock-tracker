@@ -3,7 +3,7 @@
 #
 # Creates TWO tasks:
 #   StockTracker_Daily   - runs main.py at 4:30 PM every weekday
-#   StockTracker_Catchup - runs every hour; skips if today's data already exists
+#   StockTracker_Catchup - runs every hour after 4 PM; skips if data exists
 #
 # Usage:  powershell -ExecutionPolicy Bypass -File setup_schedule.ps1
 
@@ -12,12 +12,14 @@ $PythonExe     = (Get-Command python).Source
 $MainScript    = Join-Path $ScriptDir "main.py"
 $CatchupScript = Join-Path $ScriptDir "catchup.py"
 $LogFile       = Join-Path $ScriptDir "tracker.log"
+$DailyWrapper  = Join-Path $ScriptDir "run_daily.ps1"
+$CatchupWrapper= Join-Path $ScriptDir "run_catchup.ps1"
 
 # -- Install Python deps -------------------------------------------------------
 Write-Host "Installing Python dependencies ..."
 & $PythonExe -m pip install -r "$ScriptDir\requirements.txt" --quiet
 
-# -- Write the catch-up helper script -----------------------------------------
+# -- Write catchup.py ----------------------------------------------------------
 @"
 """
 catchup.py - run hourly after 4 PM; only calls main.py if today's data is missing.
@@ -50,16 +52,46 @@ print(f"No data for {TODAY} yet - running main.py ...")
 subprocess.run([sys.executable, str(BASE / "main.py")], check=True)
 "@ | Set-Content -Path $CatchupScript -Encoding UTF8
 
+# -- Write run_daily.ps1 wrapper -----------------------------------------------
+@"
+`$LogFile  = "$LogFile"
+`$PythonExe = "$PythonExe"
+`$MainScript = "$MainScript"
+
+Add-Content -Path `$LogFile -Value ""
+Add-Content -Path `$LogFile -Value "[`$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] --- Daily run started ---"
+& `$PythonExe `$MainScript 2>&1 | ForEach-Object {
+    Add-Content -Path `$LogFile -Value `$_
+    Write-Output `$_
+}
+Add-Content -Path `$LogFile -Value "[`$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] --- Daily run finished ---"
+"@ | Set-Content -Path $DailyWrapper -Encoding UTF8
+
+# -- Write run_catchup.ps1 wrapper ---------------------------------------------
+@"
+`$LogFile  = "$LogFile"
+`$PythonExe = "$PythonExe"
+`$CatchupScript = "$CatchupScript"
+
+Add-Content -Path `$LogFile -Value ""
+Add-Content -Path `$LogFile -Value "[`$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] --- Catchup run started ---"
+& `$PythonExe `$CatchupScript 2>&1 | ForEach-Object {
+    Add-Content -Path `$LogFile -Value `$_
+    Write-Output `$_
+}
+Add-Content -Path `$LogFile -Value "[`$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] --- Catchup run finished ---"
+"@ | Set-Content -Path $CatchupWrapper -Encoding UTF8
+
 # -- Task 1: Daily at 4:30 PM on weekdays -------------------------------------
 $TaskName1 = "StockTracker_Daily"
 $Action1   = New-ScheduledTaskAction `
-    -Execute "cmd.exe" `
-    -Argument "/c `"$PythonExe`" `"$MainScript`" >> `"$LogFile`" 2>&1" `
+    -Execute "powershell.exe" `
+    -Argument "-ExecutionPolicy Bypass -File `"$DailyWrapper`"" `
     -WorkingDirectory $ScriptDir
 $Trigger1  = New-ScheduledTaskTrigger -Weekly `
     -DaysOfWeek Monday,Tuesday,Wednesday,Thursday,Friday -At "4:30PM"
 $Settings1 = New-ScheduledTaskSettingsSet `
-    -ExecutionTimeLimit (New-TimeSpan -Minutes 5) `
+    -ExecutionTimeLimit (New-TimeSpan -Minutes 10) `
     -StartWhenAvailable `
     -RunOnlyIfNetworkAvailable
 
@@ -78,14 +110,14 @@ Write-Host "  [OK] $TaskName1 - weekdays at 4:30 PM"
 # -- Task 2: Catch-up every hour, skips if already ran today ------------------
 $TaskName2 = "StockTracker_Catchup"
 $Action2   = New-ScheduledTaskAction `
-    -Execute "cmd.exe" `
-    -Argument "/c `"$PythonExe`" `"$CatchupScript`" >> `"$LogFile`" 2>&1" `
+    -Execute "powershell.exe" `
+    -Argument "-ExecutionPolicy Bypass -File `"$CatchupWrapper`"" `
     -WorkingDirectory $ScriptDir
 $Trigger2  = New-ScheduledTaskTrigger -Once -At "12:00AM" `
-    -RepetitionInterval (New-TimeSpan -Minutes 1) `
+    -RepetitionInterval (New-TimeSpan -Hours 1) `
     -RepetitionDuration (New-TimeSpan -Days 3650)
 $Settings2 = New-ScheduledTaskSettingsSet `
-    -ExecutionTimeLimit (New-TimeSpan -Minutes 5) `
+    -ExecutionTimeLimit (New-TimeSpan -Minutes 10) `
     -StartWhenAvailable `
     -RunOnlyIfNetworkAvailable
 

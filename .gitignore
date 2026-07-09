@@ -1,7 +1,10 @@
 stocks.xlsx
-dashboard.html
 __pycache__/
 *.pyc
 old db/
 tracker.log
 catchup.py
+run_daily.ps1
+run_catchup.ps1
+run_daily.vbs
+run_catchup.vbs

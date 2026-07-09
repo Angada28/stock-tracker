@@ -86,7 +86,7 @@ Add-Content -Path `$LogFile -Value "[`$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')]
 $TaskName1 = "StockTracker_Daily"
 $Action1   = New-ScheduledTaskAction `
     -Execute "powershell.exe" `
-    -Argument "-ExecutionPolicy Bypass -File `"$DailyWrapper`"" `
+    -Argument "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"$DailyWrapper`"" `
     -WorkingDirectory $ScriptDir
 $Trigger1  = New-ScheduledTaskTrigger -Weekly `
     -DaysOfWeek Monday,Tuesday,Wednesday,Thursday,Friday -At "4:30PM"
@@ -111,7 +111,7 @@ Write-Host "  [OK] $TaskName1 - weekdays at 4:30 PM"
 $TaskName2 = "StockTracker_Catchup"
 $Action2   = New-ScheduledTaskAction `
     -Execute "powershell.exe" `
-    -Argument "-ExecutionPolicy Bypass -File `"$CatchupWrapper`"" `
+    -Argument "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"$CatchupWrapper`"" `
     -WorkingDirectory $ScriptDir
 $Trigger2  = New-ScheduledTaskTrigger -Once -At "12:00AM" `
     -RepetitionInterval (New-TimeSpan -Hours 1) `

@@ -82,7 +82,7 @@ $Action2   = New-ScheduledTaskAction `
     -Argument "/c `"$PythonExe`" `"$CatchupScript`" >> `"$LogFile`" 2>&1" `
     -WorkingDirectory $ScriptDir
 $Trigger2  = New-ScheduledTaskTrigger -Once -At "12:00AM" `
-    -RepetitionInterval (New-TimeSpan -Hours 1) `
+    -RepetitionInterval (New-TimeSpan -Minutes 1) `
     -RepetitionDuration (New-TimeSpan -Days 3650)
 $Settings2 = New-ScheduledTaskSettingsSet `
     -ExecutionTimeLimit (New-TimeSpan -Minutes 5) `

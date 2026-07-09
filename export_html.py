@@ -478,7 +478,8 @@ BODY = """\
 <header>
   <h1>&#x1F4C8; Stock Tracker</h1>
   <div class='hstats' id='hstats'></div>
-  <button id='theme-toggle' onclick='toggleTheme()' style='margin-left:auto;padding:5px 12px;border-radius:5px;border:1px solid #334155;background:#1e293b;color:#94a3b8;font-size:.78rem;cursor:pointer'>Light</button>
+  <a id='dl-btn' href='excel/stocks_{today}.xlsx' download style='margin-left:auto;padding:5px 12px;border-radius:5px;border:1px solid #334155;background:#1e293b;color:#94a3b8;font-size:.78rem;cursor:pointer;text-decoration:none'>&#8595; Excel</a>
+  <button id='theme-toggle' onclick='toggleTheme()' style='padding:5px 12px;border-radius:5px;border:1px solid #334155;background:#1e293b;color:#94a3b8;font-size:.78rem;cursor:pointer'>Light</button>
 </header>
 <nav>
   <button id='nav-today'   class='nav-btn' onclick="goView('today')">Today</button>
@@ -614,7 +615,7 @@ def export_html(conn):
         "<script src='https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'></script>"
         "<style>" + CSS + "</style>"
         "</head><body>"
-        + BODY +
+        + BODY.replace('{today}', today_str) +
         "<script>const DATA=" + embedded + ";</script>"
         "<script>" + stats_js + JS + "</script>"
         "</body></html>"

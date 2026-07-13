@@ -32,8 +32,24 @@ def init_db(conn):
             FOREIGN KEY (symbol) REFERENCES stocks(symbol)
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS metadata (
+            key   TEXT PRIMARY KEY,
+            value TEXT
+        )
+    """)
     conn.execute("CREATE INDEX IF NOT EXISTS idx_dp_symbol_date ON daily_prices(symbol, date)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_dp_date       ON daily_prices(date)")
+    conn.commit()
+
+
+def get_metadata(conn, key):
+    row = conn.execute("SELECT value FROM metadata WHERE key=?", (key,)).fetchone()
+    return row[0] if row else None
+
+
+def set_metadata(conn, key, value):
+    conn.execute("INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)", (key, value))
     conn.commit()
 
 

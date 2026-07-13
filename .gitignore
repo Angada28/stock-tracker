@@ -7,3 +7,7 @@ old db/
 tracker.log
 catchup.py
 excel/
+run_daily.ps1
+run_catchup.ps1
+run_daily.vbs
+run_catchup.vbs

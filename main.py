@@ -13,7 +13,7 @@ from datetime import date
 from pathlib import Path
 
 import config
-from db           import init_db, get_tracked_symbols, insert_rows
+from db           import init_db, get_tracked_symbols, insert_rows, get_metadata, set_metadata
 from fetch        import fetch_most_active, fetch_quotes_for_symbols
 from export_excel import export_excel
 from export_html  import export_html
@@ -71,10 +71,15 @@ def main():
             run_backfill(conn, start_str=None, symbols=new_symbols)
 
         # Step 4: weekly gap-fill on the configured day of week
-        # (skipped if --backfill was passed since that covers the same ground)
-        if date.today().weekday() == config.WEEKLY_FILL_DAY and not args.backfill:
+        # (skipped if --backfill was passed, or if already ran today)
+        today_str = date.today().isoformat()
+        last_weekly = get_metadata(conn, "last_weekly_fill")
+        if (date.today().weekday() == config.WEEKLY_FILL_DAY
+                and not args.backfill
+                and last_weekly != today_str):
             print(f"Weekly gap-fill (start: {config.BACKFILL_START}) ...")
             run_backfill(conn, start_str=config.BACKFILL_START)
+            set_metadata(conn, "last_weekly_fill", today_str)
 
     # Step 5: optional manual full backfill
     if args.backfill:
